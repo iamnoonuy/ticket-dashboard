@@ -121,6 +121,23 @@ st.markdown("""
         background-color: #FFFFFF;
         border-bottom: 2px solid #3B82F6;
     }
+
+    /* Increase font sizes for filters */
+    .stMultiSelect label, .stDateInput label, .stSelectbox label {
+        font-size: 1.15rem !important;
+        font-weight: 500 !important;
+    }
+    div[data-baseweb="select"] * {
+        font-size: 1.05rem !important;
+    }
+    /* Attempt to scale dataframe */
+    [data-testid="stDataFrame"] {
+        font-size: 1.05rem !important;
+    }
+    .stMarkdown p, .stMarkdown li {
+        font-size: 1.05rem !important;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
