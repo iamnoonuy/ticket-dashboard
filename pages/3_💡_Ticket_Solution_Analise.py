@@ -59,6 +59,39 @@ st.markdown("""
     }
     
     [data-testid="stSidebarNav"] ul li span { font-size: 1.1rem !important; font-weight: 600 !important; }
+
+    /* Fix Header and Sidebar Toggle */
+    header {background-color: transparent !important;}
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stDeployButton {display:none;}
+    
+    /* Make the sidebar toggle arrow clearly visible */
+    [data-testid='collapsedControl'] {
+        color: #0F766E !important;
+        background-color: #F8FAFC !important;
+        border: 2px solid #0F766E !important;
+        border-radius: 8px !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+    }
+
+
+    /* Increase font sizes for filters */
+    .stMultiSelect label, .stDateInput label, .stSelectbox label {
+        font-size: 1.15rem !important;
+        font-weight: 500 !important;
+    }
+    div[data-baseweb="select"] * {
+        font-size: 1.05rem !important;
+    }
+    /* Attempt to scale dataframe */
+    [data-testid="stDataFrame"] {
+        font-size: 1.05rem !important;
+    }
+    .stMarkdown p, .stMarkdown li {
+        font-size: 1.05rem !important;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -266,7 +299,7 @@ st.markdown("<div class='analysis-card'>", unsafe_allow_html=True)
 st.markdown("<h3>📚 Solution Knowledge Base (จัดกลุ่มปัญหาที่เหมือนกัน)</h3>", unsafe_allow_html=True)
 
 if not kb_df.empty:
-    st.dataframe(kb_df, use_container_width=True, hide_index=True, height=500)
+    st.dataframe(kb_df.style.set_properties(**{'font-size': '14px'}), use_container_width=True, hide_index=True, height=500)
 else:
     st.warning("ไม่สามารถสร้างตาราง Knowledge Base ได้ เนื่องจากข้อมูลไม่ครบถ้วน")
 st.markdown("</div>", unsafe_allow_html=True)
