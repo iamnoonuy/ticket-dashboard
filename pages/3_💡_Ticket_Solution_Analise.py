@@ -101,10 +101,9 @@ st.markdown("""
 st.sidebar.markdown("### 📥 Data Source")
 uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx", "xls"])
 
-LATEST_UPLOAD = "latest_analysis_data.xlsx"
+LATEST_UPLOAD = "latest_uploaded_data.xlsx"
 import json
 METADATA_FILE = "upload_metadata.json"
-TARGET_FILE = "Ticket_detail_report_by_owner_flag_20260902_07.57.xlsx"
 
 if uploaded_file:
     with open(LATEST_UPLOAD, "wb") as f:
@@ -117,20 +116,13 @@ if uploaded_file:
 def load_data(file_trigger):
     file_to_load = None
     
-    # Priority 1: User uploaded file
     if os.path.exists(LATEST_UPLOAD):
         file_to_load = LATEST_UPLOAD
-    # Priority 2: Explicitly requested target file (look in parent dir because we might be in pages/)
-    elif os.path.exists(TARGET_FILE):
-        file_to_load = TARGET_FILE
-    elif os.path.exists(f"../{TARGET_FILE}"):
-        file_to_load = f"../{TARGET_FILE}"
-    # Priority 3: Fallback to any recent excel
     else:
         file_pattern = "Ticket_detail_report_by_owner_flag_*.xlsx"
         files = glob.glob(file_pattern)
         if not files:
-            files = [f for f in glob.glob("*.xlsx") if not f.startswith('~$') and 'Team GP' not in f]
+            files = [f for f in glob.glob("*.xlsx") if not f.startswith('~$') and 'Team GP' not in f and 'latest' not in f]
         if files:
             file_to_load = max(files, key=os.path.getctime)
 
