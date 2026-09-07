@@ -111,7 +111,24 @@ html_content = f"""
         .styled-table th, .styled-table td {{ padding: 12px 15px; border-bottom: 1px solid #dddddd; }}
         .styled-table tbody tr:nth-of-type(even) {{ background-color: #f3f3f3; }}
         .styled-table tbody tr:last-of-type {{ border-bottom: 2px solid #00897B; }}
-    </style>
+    
+    /* Increase font sizes for filters */
+    .stMultiSelect label, .stDateInput label, .stSelectbox label {
+        font-size: 1.15rem !important;
+        font-weight: 500 !important;
+    }
+    div[data-baseweb="select"] * {
+        font-size: 1.05rem !important;
+    }
+    /* Attempt to scale dataframe */
+    [data-testid="stDataFrame"] {
+        font-size: 1.05rem !important;
+    }
+    .stMarkdown p, .stMarkdown li {
+        font-size: 1.05rem !important;
+    }
+
+</style>
 </head>
 <body>
     <div class="header">
