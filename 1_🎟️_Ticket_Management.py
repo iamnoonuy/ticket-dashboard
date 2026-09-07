@@ -34,7 +34,27 @@ st.markdown("""
     }
     
     /* Hide native styling components */
-    header {visibility: hidden;}
+    
+    /* Fix Header and Sidebar Toggle */
+    header {background-color: transparent !important;}
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stDeployButton {display:none;}
+    
+    /* Make the sidebar toggle arrow clearly visible */
+    [data-testid='collapsedControl'] {
+        color: #0F766E !important;
+        background-color: #F8FAFC !important;
+        border: 2px solid #0F766E !important;
+        border-radius: 8px !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+        margin-top: 10px;
+        margin-left: 10px;
+    }
+    [data-testid='stSidebarCollapseButton'] {
+        color: #0F766E !important;
+    }
+
     
     /* Sidebar Nav styling for larger text */
     [data-testid="stSidebarNav"] ul li span {
