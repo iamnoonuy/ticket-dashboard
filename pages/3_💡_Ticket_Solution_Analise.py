@@ -169,6 +169,17 @@ if df.empty:
 # SIDEBAR FILTERS
 # ==========================================
 st.sidebar.markdown("### 🔍 Filters")
+
+if 'CreateDate' in df.columns:
+    df['CreateDate_Day'] = df['CreateDate'].dt.date
+
+if 'CreateDate_Day' in df.columns and not df['CreateDate_Day'].isna().all():
+    min_d = df['CreateDate_Day'].min()
+    max_d = df['CreateDate_Day'].max()
+    date_range = st.sidebar.date_input("Date Range (Create Date)", [min_d, max_d], min_value=min_d, max_value=max_d)
+else:
+    date_range = []
+
 def filter_multiselect(label, col_name, data):
     if col_name in data.columns:
         options = sorted(list(data[col_name].dropna().astype(str).unique()))
@@ -180,6 +191,8 @@ f_ticket_type = filter_multiselect("Ticket Type", "TicketType", df)
 f_defect1 = filter_multiselect("Defect Level 1", "Solution/Defect LV 1", df)
 f_defect2 = filter_multiselect("Defect Level 2", "Solution/Defect LV 2", df)
 
+if len(date_range) == 2:
+    df = df[(df['CreateDate_Day'] >= date_range[0]) & (df['CreateDate_Day'] <= date_range[1])]
 if f_ticket_type: df = df[df['TicketType'].isin(f_ticket_type)]
 if f_defect1: df = df[df['Solution/Defect LV 1'].isin(f_defect1)]
 if f_defect2: df = df[df['Solution/Defect LV 2'].isin(f_defect2)]
