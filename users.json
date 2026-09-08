@@ -1,0 +1,32 @@
+{
+    "admin": {
+        "password": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+        "role": "admin",
+        "allowed_pages": [
+            "\ud83c\udf9f\ufe0f Ticket Management",
+            "\ud83d\udd25 Outstanding Ticket",
+            "\ud83d\udca1 Ticket Solution-Analise",
+            "\u2699\ufe0f Admin Panel"
+        ]
+    },
+    "prachumporn.pre": {
+        "password": "ed9fdb244f053342821dab5a0614de05552300bc93779ce6da8cfb2b8a6188cb",
+        "role": "admin",
+        "allowed_pages": [
+            "\ud83c\udf9f\ufe0f Ticket Management",
+            "\ud83d\udd25 Outstanding Ticket",
+            "\ud83d\udca1 Ticket Solution-Analise",
+            "\u2699\ufe0f Admin Panel"
+        ]
+    },
+    "boonta.sat": {
+        "password": "5073db33dc4e40326ad5f42dd1ffefdbe8af02a987682038e336da1c772df10c",
+        "role": "admin",
+        "allowed_pages": [
+            "\ud83c\udf9f\ufe0f Ticket Management",
+            "\ud83d\udd25 Outstanding Ticket",
+            "\ud83d\udca1 Ticket Solution-Analise",
+            "\u2699\ufe0f Admin Panel"
+        ]
+    }
+}
