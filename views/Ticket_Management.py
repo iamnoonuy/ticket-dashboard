@@ -146,40 +146,47 @@ LATEST_UPLOAD = "latest_uploaded_data.xlsx"
 import json
 METADATA_FILE = "upload_metadata.json"
 
-# Save newly uploaded file and overwrite previous
+from google_sheets_helper import upload_ticket_data_to_gsheets, load_ticket_data_from_gsheets
+
+# Save newly uploaded file to GSheets
 if uploaded_file:
-    with open(LATEST_UPLOAD, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    with open(METADATA_FILE, "w", encoding="utf-8") as f:
-        json.dump({"filename": uploaded_file.name}, f)
-    st.sidebar.success("File uploaded and saved successfully!")
+    with st.spinner("กำลังอัปโหลดข้อมูลขึ้น Google Sheets..."):
+        try:
+            # Auto-detect header
+            preview = pd.read_excel(uploaded_file, header=None, nrows=20)
+            header_idx = 0
+            for i, row in preview.iterrows():
+                if 'TicketID' in str(row.values) or 'Ticket ID' in str(row.values):
+                    header_idx = i
+                    break
+            
+            # Reset pointer
+            uploaded_file.seek(0)
+            df_upload = pd.read_excel(uploaded_file, header=header_idx)
+            
+            # Upload to GSheets
+            upload_ticket_data_to_gsheets(df_upload)
+            
+            # Save metadata locally just for name display
+            with open(METADATA_FILE, "w", encoding="utf-8") as f:
+                json.dump({"filename": uploaded_file.name}, f)
+                
+            st.sidebar.success("อัปโหลดขึ้น Google Sheets สำเร็จ!")
+            st.cache_data.clear() # Clear cache to fetch new data
+        except Exception as e:
+            st.sidebar.error(f"Error uploading: {e}")
 
-@st.cache_data(ttl=3600)
-def load_data(file_trigger):
-    target_file = None
-    if os.path.exists(LATEST_UPLOAD):
-        target_file = LATEST_UPLOAD
-    else:
-        file_pattern = "Ticket_detail_report_by_owner_flag_*.xlsx"
-        files = glob.glob(file_pattern)
-        if not files:
-            files = [f for f in glob.glob("*.xlsx") if not f.startswith('~$') and 'Team GP' not in f and 'latest' not in f]
-        if files:
-            target_file = max(files, key=os.path.getctime)
-
-    if not target_file:
+@st.cache_data(ttl=300)
+def load_data():
+    try:
+        df = load_ticket_data_from_gsheets()
+        if df.empty:
+            return pd.DataFrame()
+    except Exception as e:
+        st.error(f"Error loading from Google Sheets: {e}")
         return pd.DataFrame()
 
     try:
-        # Auto-detect header row
-        preview = pd.read_excel(target_file, header=None, nrows=20)
-        header_idx = 0
-        for i, row in preview.iterrows():
-            if 'TicketID' in row.values or 'Ticket ID' in row.values:
-                header_idx = i
-                break
-                
-        df = pd.read_excel(target_file, header=header_idx)
         
         # Datetime conversion
         for col in ['CreateDate', 'FinishDate', 'UpdateDate', 'EndSLADate']:
@@ -193,15 +200,15 @@ def load_data(file_trigger):
                 df[col] = df[col].astype(str).replace('nan', 'Unknown')
                 df[col] = df[col].fillna('Unknown')
                 
-        # Filter by Team GP Account&Finance
-        team_file_path = 'Team GP Account&Finance.xlsx'
-        if os.path.exists(team_file_path) and 'ResponseBy' in df.columns:
-            team_df = pd.read_excel(team_file_path)
-            if 'รายชื่อทีม' in team_df.columns:
-                team_names_clean = team_df['รายชื่อทีม'].dropna().astype(str).str.replace('^คุณ', '', regex=True).str.strip().tolist()
-                team_names_raw = team_df['รายชื่อทีม'].dropna().astype(str).str.strip().tolist()
-                allowed_names = set(team_names_clean + team_names_raw)
-                df = df[df['ResponseBy'].isin(allowed_names)]
+        # [Disabled] Filter by Team GP Account&Finance
+        # team_file_path = 'Team GP Account&Finance.xlsx'
+        # if os.path.exists(team_file_path) and 'ResponseBy' in df.columns:
+        #     team_df = pd.read_excel(team_file_path)
+        #     if 'รายชื่อทีม' in team_df.columns:
+        #         team_names_clean = team_df['รายชื่อทีม'].dropna().astype(str).str.replace('^คุณ', '', regex=True).str.strip().tolist()
+        #         team_names_raw = team_df['รายชื่อทีม'].dropna().astype(str).str.strip().tolist()
+        #         allowed_names = set(team_names_clean + team_names_raw)
+        #         df = df[df['ResponseBy'].isin(allowed_names)]
                 
         # SLA Calculation Logic
         current_time = pd.Timestamp.now()
@@ -210,7 +217,7 @@ def load_data(file_trigger):
             
         def eval_sla(row):
             status = str(row.get('Status', ''))
-            is_closed = 'Complete' in status or 'Closed' in status or 'Resolve' in status
+            is_closed = 'Complete' in status or 'Closed' in status or 'Resolve' in status or 'Cancel' in status or 'Reject' in status
             end_sla = row.get('EndSLADate')
             finish = row.get('FinishDate')
             
@@ -231,13 +238,17 @@ def load_data(file_trigger):
         df['SLA_Status'] = df.apply(eval_sla, axis=1)
         
         # Coordinate Flag
-        if 'Status' in df.columns:
-            df['IsCoordinate'] = df['Status'].str.contains('Coordinate', case=False, na=False)
+        if 'RefTicket' in df.columns:
+            # Mark as coordinate if RefTicket is not empty and not '0' or '0.0'
+            df['IsCoordinate'] = df['RefTicket'].astype(str).str.strip().str.replace(r'\.0$', '', regex=True).apply(lambda x: x != '' and x != 'nan' and x != '0' and x != 'None')
         else:
             df['IsCoordinate'] = False
             
         # Open Flag
-        df['IsOpen'] = ~df['Status'].str.contains('Complete|Closed|Resolve', case=False, na=False)
+        df['IsOpen'] = ~df['Status'].str.contains('Complete|Closed|Resolve|Reject|Cancel|Close', case=False, na=False)
+        
+        # Only count OPEN coordinate tickets
+        df['IsCoordinate'] = df['IsCoordinate'] & df['IsOpen']
 
         # Extract Date for trend
         if 'CreateDate' in df.columns:
@@ -248,8 +259,8 @@ def load_data(file_trigger):
         st.error(f"Error parsing data: {e}")
         return pd.DataFrame()
 
-file_mtime = os.path.getmtime(LATEST_UPLOAD) if os.path.exists(LATEST_UPLOAD) else 0
-df = load_data(file_mtime)
+
+df = load_data()
 
 if df.empty:
     st.warning("No valid dataset found. Please upload a file via the sidebar.")
@@ -390,7 +401,7 @@ with tab2:
 with tab3:
     st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
     if 'ResponseBy' in filtered_df.columns:
-        unassigned_df = filtered_df[(filtered_df['ResponseBy'].str.contains('Unknown|-|nan', case=False, na=False) | (filtered_df['ResponseBy'] == '')) & (filtered_df['IsOpen'] == True)]
+        unassigned_df = filtered_df[(filtered_df['ResponseBy'].astype(str).str.strip().isin(['Unknown', '-', 'nan', 'None', ''])) & (filtered_df['IsOpen'] == True)]
         st.markdown("**👤 รายการ Ticket ที่เปิดไว้แต่ยังไม่มีผู้รับผิดชอบ**")
         display_dataframe(unassigned_df)
     else:
@@ -414,7 +425,15 @@ with tab4:
             
     with c_coord2:
         st.markdown("**🟣 รายการเอกสาร / Ticket ที่อยู่ระหว่างการประสานงาน**")
-        display_dataframe(coord_df)
+        
+        # Ensure RefTicket is displayed
+        temp_display_cols = display_cols.copy()
+        if 'RefTicket' in coord_df.columns and 'RefTicket' not in temp_display_cols:
+            temp_display_cols.insert(1, 'RefTicket')
+        if not coord_df.empty:
+            st.dataframe(coord_df[temp_display_cols], use_container_width=True, hide_index=True)
+        else:
+            st.success("🎉 ไม่มีรายการที่ต้องจัดการในหมวดหมู่นี้")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
